@@ -3,7 +3,7 @@ let appState = {
     goals: [],
     dailyReports: {},
     currentDate: new Date(),
-    startDate: new Date(2025, 7, 3), // August 3, 2025 (month is 0-indexed)
+    startDate: new Date(), // Today's date
     endDate: null,
     currentWeek: 1,
     selectedDate: null,
@@ -14,6 +14,10 @@ let appState = {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
     feather.replace();
+    
+    // Set start date to today (reset time to 00:00:00)
+    appState.startDate = new Date();
+    appState.startDate.setHours(0, 0, 0, 0);
     
     // Calculate end date (12 weeks from start date)
     appState.endDate = new Date(appState.startDate);
@@ -35,8 +39,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial render
     renderAll();
     
+    // Update header with correct dates
+    updateHeaderDates();
+    
     console.log('Sistema de 12 semanas inicializado!');
 });
+
+// Update header with current cycle dates
+function updateHeaderDates() {
+    const startDate = appState.startDate;
+    const endDate = appState.endDate;
+    
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const startFormatted = startDate.toLocaleDateString('pt-BR', options);
+    const endFormatted = endDate.toLocaleDateString('pt-BR', options);
+    
+    const cycleDatesElement = document.querySelector('.cycle-dates');
+    if (cycleDatesElement) {
+        cycleDatesElement.textContent = `${startFormatted} - ${endFormatted}`;
+    }
+}
 
 // Data Management Functions
 function saveData() {
@@ -160,6 +182,8 @@ function createCalendarDay(date, week) {
 
 function updateCurrentWeek() {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const diffTime = today - appState.startDate;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
