@@ -30,12 +30,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if cycle has been started
     if (appState.cycleStarted && appState.startDate) {
         updateCurrentWeek();
+        updateDaysRemaining();
         renderAll();
         updateHeaderDates();
+        document.getElementById('weekInfo').style.display = 'inline-block';
+        document.getElementById('startCycleBtn').style.display = 'none';
     } else {
         // Show start cycle button
         document.getElementById('startCycleBtn').style.display = 'inline-flex';
+        document.getElementById('weekInfo').style.display = 'none';
     }
+    
+    // Update days remaining every hour
+    setInterval(updateDaysRemaining, 3600000);
     
     console.log('Sistema de 12 semanas carregado!');
 });
@@ -66,34 +73,60 @@ function openStartCycleModal() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + (12 * 7) - 1);
-    
-    // Set the date inputs
+    // Set the date input with today's date as default
     document.getElementById('cycleStartDate').value = formatDateForInput(today);
-    document.getElementById('cycleEndDate').value = formatDateForInput(endDate);
+    
+    // Add event listener to update end date when start date changes
+    const startDateInput = document.getElementById('cycleStartDate');
+    startDateInput.addEventListener('change', updateEndDatePreview);
+    
+    // Calculate initial end date
+    updateEndDatePreview();
     
     openModal('startCycleModal');
 }
 
+function updateEndDatePreview() {
+    const startDateInput = document.getElementById('cycleStartDate').value;
+    if (!startDateInput) return;
+    
+    const startDate = new Date(startDateInput);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 83); // 84 dias = 83 dias após o início
+    
+    document.getElementById('cycleEndDate').value = formatDateForInput(endDate);
+}
+
 function startNewCycle() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const startDateInput = document.getElementById('cycleStartDate').value;
+    
+    if (!startDateInput) {
+        alert('Por favor, selecione uma data de início.');
+        return;
+    }
+    
+    // Parse the selected date
+    const startDate = new Date(startDateInput);
+    startDate.setHours(0, 0, 0, 0);
     
     // Set cycle dates
-    appState.startDate = new Date(today);
-    appState.endDate = new Date(today);
-    appState.endDate.setDate(appState.endDate.getDate() + (12 * 7) - 1);
+    appState.startDate = startDate;
+    appState.endDate = new Date(startDate);
+    appState.endDate.setDate(appState.endDate.getDate() + 83); // 84 dias totais
     appState.cycleStarted = true;
     
     // Save the cycle start in localStorage
     saveData();
     
-    // Hide the start button
+    // Hide the start button and show week info
     document.getElementById('startCycleBtn').style.display = 'none';
+    document.getElementById('weekInfo').style.display = 'inline-block';
     
     // Update UI
     updateCurrentWeek();
+    updateDaysRemaining();
     renderAll();
     updateHeaderDates();
     updateFooterText();
@@ -113,7 +146,10 @@ function formatDateForInput(date) {
 
 // Update header with current cycle dates
 function updateHeaderDates() {
-    if (!appState.cycleStarted || !appState.startDate) return;
+    if (!appState.cycleStarted || !appState.startDate) {
+        document.getElementById('cycleDates').textContent = 'Clique em "Iniciar Sessão" para começar';
+        return;
+    }
     
     const startDate = appState.startDate;
     const endDate = appState.endDate;
@@ -122,9 +158,28 @@ function updateHeaderDates() {
     const startFormatted = startDate.toLocaleDateString('pt-BR', options);
     const endFormatted = endDate.toLocaleDateString('pt-BR', options);
     
-    const cycleDatesElement = document.querySelector('.cycle-dates');
+    const cycleDatesElement = document.getElementById('cycleDates');
     if (cycleDatesElement) {
         cycleDatesElement.textContent = `${startFormatted} - ${endFormatted}`;
+    }
+}
+
+function updateDaysRemaining() {
+    if (!appState.cycleStarted || !appState.endDate) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = appState.endDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const daysRemainingElement = document.getElementById('daysRemaining');
+    if (daysRemainingElement) {
+        if (diffDays <= 0) {
+            daysRemainingElement.textContent = '0';
+        } else {
+            daysRemainingElement.textContent = diffDays;
+        }
     }
 }
 
@@ -269,6 +324,13 @@ function createCalendarDay(date, week) {
     // Highlight current week
     if (week === appState.currentWeek) {
         dayElement.classList.add('current-week');
+    }
+    
+    // Highlight today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (formatDateKey(date) === formatDateKey(today)) {
+        dayElement.classList.add('today');
     }
     
     dayElement.appendChild(dayNumber);
@@ -682,10 +744,8 @@ function openDailyReportModal(date) {
     const moodButtons = document.querySelectorAll('.mood-btn');
     moodButtons.forEach(btn => {
         btn.classList.remove('selected');
-        btn.addEventListener('click', function() {
-            moodButtons.forEach(b => b.classList.remove('selected'));
-            this.classList.add('selected');
-        });
+        btn.removeEventListener('click', moodButtonClickHandler);
+        btn.addEventListener('click', moodButtonClickHandler);
     });
     
     if (existingReport && existingReport.mood) {
@@ -696,6 +756,12 @@ function openDailyReportModal(date) {
     }
     
     openModal('dailyReportModal');
+}
+
+function moodButtonClickHandler() {
+    const moodButtons = document.querySelectorAll('.mood-btn');
+    moodButtons.forEach(b => b.classList.remove('selected'));
+    this.classList.add('selected');
 }
 
 function saveDailyReport() {
