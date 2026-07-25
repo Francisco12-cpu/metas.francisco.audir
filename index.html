@@ -21,6 +21,10 @@
             <div class="cycle-info">
                 <span class="cycle-dates">3 de Agosto - 26 de Outubro, 2025</span>
                 <span class="current-week">Semana <span id="currentWeekNumber">1</span></span>
+                <button id="startCycleBtn" class="btn-start-cycle" style="display:none;">
+                    <i data-feather="play"></i>
+                    Iniciar Ciclo
+                </button>
             </div>
         </header>
 
@@ -119,6 +123,34 @@
             </section>
         </main>
 
+        <!-- Start Cycle Modal -->
+        <div id="startCycleModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Iniciar Ciclo de 12 Semanas</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                        Você está prestes a iniciar um novo ciclo de 12 semanas (84 dias). 
+                        Esta data será marcada como o primeiro dia do seu ciclo.
+                    </p>
+                    <div class="form-group">
+                        <label for="cycleStartDate">Data de Início:</label>
+                        <input type="date" id="cycleStartDate" disabled style="background: var(--bg-secondary); cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label for="cycleEndDate">Data de Término (prevista):</label>
+                        <input type="date" id="cycleEndDate" disabled style="background: var(--bg-secondary); cursor: not-allowed;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelStartBtn" class="btn-secondary">Cancelar</button>
+                    <button id="confirmStartBtn" class="btn-primary">Confirmar Início</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Daily Report Modal -->
         <div id="dailyReportModal" class="modal">
             <div class="modal-content">
@@ -190,7 +222,7 @@
 
     <footer class="footer">
         <p>&copy; 2025 - Projeto desenvolvido para organização pessoal de metas</p>
-        <p>Sistema de 12 semanas iniciado em 3 de agosto de 2025</p>
+        <p id="footerText">Sistema de 12 semanas aguardando início</p>
     </footer>
 
     <script src="https://unpkg.com/feather-icons"></script>
