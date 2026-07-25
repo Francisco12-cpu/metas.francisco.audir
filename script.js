@@ -3,11 +3,12 @@ let appState = {
     goals: [],
     dailyReports: {},
     currentDate: new Date(),
-    startDate: new Date(), // Today's date
+    startDate: null, // Will be set when cycle starts
     endDate: null,
     currentWeek: 1,
     selectedDate: null,
-    selectedGoal: null
+    selectedGoal: null,
+    cycleStarted: false
 };
 
 // Initialize the application
@@ -15,38 +16,105 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Feather icons
     feather.replace();
     
-    // Set start date to today (reset time to 00:00:00)
-    appState.startDate = new Date();
-    appState.startDate.setHours(0, 0, 0, 0);
-    
-    // Calculate end date (12 weeks from start date)
-    appState.endDate = new Date(appState.startDate);
-    appState.endDate.setDate(appState.endDate.getDate() + (12 * 7) - 1);
-    
     // Load data from localStorage
     loadData();
     
     // Initialize components
     initializeNavigation();
+    initializeCycleControl();
     initializeCalendar();
     initializeGoals();
     initializeProgress();
     initializeModals();
     
-    // Update current week
-    updateCurrentWeek();
+    // Check if cycle has been started
+    if (appState.cycleStarted && appState.startDate) {
+        updateCurrentWeek();
+        renderAll();
+        updateHeaderDates();
+    } else {
+        // Show start cycle button
+        document.getElementById('startCycleBtn').style.display = 'inline-flex';
+    }
     
-    // Initial render
-    renderAll();
-    
-    // Update header with correct dates
-    updateHeaderDates();
-    
-    console.log('Sistema de 12 semanas inicializado!');
+    console.log('Sistema de 12 semanas carregado!');
 });
+
+// Initialize cycle control
+function initializeCycleControl() {
+    const startCycleBtn = document.getElementById('startCycleBtn');
+    if (startCycleBtn) {
+        startCycleBtn.addEventListener('click', function() {
+            openStartCycleModal();
+        });
+    }
+    
+    const cancelStartBtn = document.getElementById('cancelStartBtn');
+    if (cancelStartBtn) {
+        cancelStartBtn.addEventListener('click', function() {
+            closeModal('startCycleModal');
+        });
+    }
+    
+    const confirmStartBtn = document.getElementById('confirmStartBtn');
+    if (confirmStartBtn) {
+        confirmStartBtn.addEventListener('click', startNewCycle);
+    }
+}
+
+function openStartCycleModal() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + (12 * 7) - 1);
+    
+    // Set the date inputs
+    document.getElementById('cycleStartDate').value = formatDateForInput(today);
+    document.getElementById('cycleEndDate').value = formatDateForInput(endDate);
+    
+    openModal('startCycleModal');
+}
+
+function startNewCycle() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Set cycle dates
+    appState.startDate = new Date(today);
+    appState.endDate = new Date(today);
+    appState.endDate.setDate(appState.endDate.getDate() + (12 * 7) - 1);
+    appState.cycleStarted = true;
+    
+    // Save the cycle start in localStorage
+    saveData();
+    
+    // Hide the start button
+    document.getElementById('startCycleBtn').style.display = 'none';
+    
+    // Update UI
+    updateCurrentWeek();
+    renderAll();
+    updateHeaderDates();
+    updateFooterText();
+    
+    // Close modal
+    closeModal('startCycleModal');
+    
+    console.log('Ciclo iniciado em:', formatDateDisplay(appState.startDate));
+}
+
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
 
 // Update header with current cycle dates
 function updateHeaderDates() {
+    if (!appState.cycleStarted || !appState.startDate) return;
+    
     const startDate = appState.startDate;
     const endDate = appState.endDate;
     
@@ -60,11 +128,24 @@ function updateHeaderDates() {
     }
 }
 
+function updateFooterText() {
+    if (!appState.cycleStarted || !appState.startDate) {
+        document.getElementById('footerText').textContent = 'Sistema de 12 semanas aguardando início';
+    } else {
+        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+        const startFormatted = appState.startDate.toLocaleDateString('pt-BR', options);
+        document.getElementById('footerText').textContent = `Ciclo iniciado em ${startFormatted}`;
+    }
+}
+
 // Data Management Functions
 function saveData() {
     const dataToSave = {
         goals: appState.goals,
         dailyReports: appState.dailyReports,
+        startDate: appState.startDate ? appState.startDate.toISOString() : null,
+        endDate: appState.endDate ? appState.endDate.toISOString() : null,
+        cycleStarted: appState.cycleStarted,
         lastUpdated: new Date().toISOString()
     };
     localStorage.setItem('goals12weeks', JSON.stringify(dataToSave));
@@ -77,6 +158,15 @@ function loadData() {
             const data = JSON.parse(savedData);
             appState.goals = data.goals || [];
             appState.dailyReports = data.dailyReports || {};
+            appState.cycleStarted = data.cycleStarted || false;
+            
+            if (data.startDate) {
+                appState.startDate = new Date(data.startDate);
+            }
+            if (data.endDate) {
+                appState.endDate = new Date(data.endDate);
+            }
+            
             console.log('Dados carregados do localStorage');
         } catch (error) {
             console.error('Erro ao carregar dados:', error);
@@ -101,6 +191,11 @@ function initializeNavigation() {
 }
 
 function showSection(sectionName) {
+    if (!appState.cycleStarted) {
+        alert('Por favor, inicie o ciclo primeiro!');
+        return;
+    }
+    
     const sections = document.querySelectorAll('.section');
     sections.forEach(section => {
         section.classList.remove('active');
@@ -123,6 +218,12 @@ function initializeCalendar() {
 }
 
 function renderCalendar() {
+    if (!appState.cycleStarted || !appState.startDate) {
+        const calendarGrid = document.getElementById('calendar-grid');
+        calendarGrid.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);">Inicie o ciclo para ver o calendário</p>';
+        return;
+    }
+    
     const calendarGrid = document.getElementById('calendar-grid');
     calendarGrid.innerHTML = '';
     
@@ -181,6 +282,11 @@ function createCalendarDay(date, week) {
 }
 
 function updateCurrentWeek() {
+    if (!appState.cycleStarted || !appState.startDate) {
+        appState.currentWeek = 0;
+        return;
+    }
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -459,6 +565,8 @@ function updateWeeklyProgress() {
 }
 
 function calculateWeekProgress(weekNumber) {
+    if (!appState.cycleStarted || !appState.startDate) return 0;
+    
     // Calculate progress based on completed goals assigned to this week
     // and daily reports for this week
     const weekGoals = appState.goals.filter(g => g.week === weekNumber);
