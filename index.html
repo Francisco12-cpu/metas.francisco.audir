@@ -19,11 +19,13 @@
             </h1>
             <p class="subtitle">Seu sistema pessoal de organização e progresso</p>
             <div class="cycle-info">
-                <span class="cycle-dates">3 de Agosto - 26 de Outubro, 2025</span>
-                <span class="current-week">Semana <span id="currentWeekNumber">1</span></span>
-                <button id="startCycleBtn" class="btn-start-cycle" style="display:none;">
+                <span class="cycle-dates" id="cycleDates">Clique em "Iniciar Sessão" para começar</span>
+                <span class="current-week" id="weekInfo" style="display:none;">
+                    Semana <span id="currentWeekNumber">-</span> • Faltam <span id="daysRemaining">-</span> dias
+                </span>
+                <button id="startCycleBtn" class="btn-start-cycle">
                     <i data-feather="play"></i>
-                    Iniciar Ciclo
+                    Iniciar Sessão
                 </button>
             </div>
         </header>
@@ -132,12 +134,12 @@
                 </div>
                 <div class="modal-body">
                     <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
-                        Você está prestes a iniciar um novo ciclo de 12 semanas (84 dias). 
-                        Esta data será marcada como o primeiro dia do seu ciclo.
+                        Escolha a data de início do seu ciclo de 12 semanas (84 dias). 
+                        O sistema calculará automaticamente as semanas e o tempo restante.
                     </p>
                     <div class="form-group">
                         <label for="cycleStartDate">Data de Início:</label>
-                        <input type="date" id="cycleStartDate" disabled style="background: var(--bg-secondary); cursor: not-allowed;">
+                        <input type="date" id="cycleStartDate">
                     </div>
                     <div class="form-group">
                         <label for="cycleEndDate">Data de Término (prevista):</label>
